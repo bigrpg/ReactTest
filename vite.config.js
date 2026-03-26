@@ -48,8 +48,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { spawn } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+var projectRoot = fileURLToPath(new URL('.', import.meta.url));
+var jobDir = path.resolve(projectRoot, '.chatgpt-jobs');
 function runPythonModule(inputText) {
     var modulePath = fileURLToPath(new URL('./MyPython.py', import.meta.url));
     return new Promise(function (resolve, reject) {
@@ -78,6 +81,43 @@ function runPythonModule(inputText) {
         child.stdin.end(inputText);
     });
 }
+function readJobState(jobId) {
+    return __awaiter(this, void 0, void 0, function () {
+        var jobPath, content, parsed, _a;
+        var _b, _c, _d;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
+                case 0:
+                    jobPath = path.resolve(jobDir, "".concat(jobId, ".json"));
+                    _e.label = 1;
+                case 1:
+                    _e.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, readFile(jobPath, 'utf8')];
+                case 2:
+                    content = _e.sent();
+                    parsed = JSON.parse(content);
+                    return [2 /*return*/, {
+                            status: (_b = parsed.status) !== null && _b !== void 0 ? _b : 'pending',
+                            result: (_c = parsed.result) !== null && _c !== void 0 ? _c : '',
+                            error: (_d = parsed.error) !== null && _d !== void 0 ? _d : '',
+                        }];
+                case 3:
+                    _a = _e.sent();
+                    return [2 /*return*/, {
+                            status: 'pending',
+                            result: '',
+                            error: '',
+                        }];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function sendJson(res, statusCode, payload) {
+    res.statusCode = statusCode;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify(payload));
+}
 export default defineConfig({
     plugins: [
         react(),
@@ -85,45 +125,75 @@ export default defineConfig({
             name: 'python-execution-api',
             configureServer: function (server) {
                 var _this = this;
-                server.middlewares.use('/api/execute', function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
-                    var body;
+                server.middlewares.use(function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
+                    var requestUrl, body_1, jobId, state, error_1, message;
                     var _this = this;
-                    return __generator(this, function (_a) {
-                        if (req.method !== 'POST') {
-                            next();
-                            return [2 /*return*/];
-                        }
-                        body = '';
-                        req.on('data', function (chunk) {
-                            body += chunk;
-                        });
-                        req.on('end', function () { return __awaiter(_this, void 0, void 0, function () {
-                            var parsed, result, error_1, message;
-                            var _a;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
-                                    case 0:
-                                        _b.trys.push([0, 2, , 3]);
-                                        parsed = JSON.parse(body || '{}');
-                                        return [4 /*yield*/, runPythonModule((_a = parsed.text) !== null && _a !== void 0 ? _a : '')];
-                                    case 1:
-                                        result = _b.sent();
-                                        res.statusCode = 200;
-                                        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-                                        res.end(JSON.stringify({ result: result }));
-                                        return [3 /*break*/, 3];
-                                    case 2:
-                                        error_1 = _b.sent();
-                                        message = error_1 instanceof Error ? error_1.message : 'Python execution failed';
-                                        res.statusCode = 500;
-                                        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-                                        res.end(JSON.stringify({ error: message }));
-                                        return [3 /*break*/, 3];
-                                    case 3: return [2 /*return*/];
+                    var _a, _b;
+                    return __generator(this, function (_c) {
+                        switch (_c.label) {
+                            case 0:
+                                requestUrl = new URL((_a = req.url) !== null && _a !== void 0 ? _a : '/', 'http://localhost');
+                                if (requestUrl.pathname === '/api/execute') {
+                                    if (req.method !== 'POST') {
+                                        next();
+                                        return [2 /*return*/];
+                                    }
+                                    body_1 = '';
+                                    req.on('data', function (chunk) {
+                                        body_1 += chunk;
+                                    });
+                                    req.on('end', function () { return __awaiter(_this, void 0, void 0, function () {
+                                        var parsed, jobId, error_2, message;
+                                        var _a;
+                                        return __generator(this, function (_b) {
+                                            switch (_b.label) {
+                                                case 0:
+                                                    _b.trys.push([0, 2, , 3]);
+                                                    parsed = JSON.parse(body_1 || '{}');
+                                                    return [4 /*yield*/, runPythonModule((_a = parsed.text) !== null && _a !== void 0 ? _a : '')];
+                                                case 1:
+                                                    jobId = _b.sent();
+                                                    sendJson(res, 200, { jobId: jobId });
+                                                    return [3 /*break*/, 3];
+                                                case 2:
+                                                    error_2 = _b.sent();
+                                                    message = error_2 instanceof Error ? error_2.message : 'Python execution failed';
+                                                    sendJson(res, 500, { error: message });
+                                                    return [3 /*break*/, 3];
+                                                case 3: return [2 /*return*/];
+                                            }
+                                        });
+                                    }); });
+                                    return [2 /*return*/];
                                 }
-                            });
-                        }); });
-                        return [2 /*return*/];
+                                if (!(requestUrl.pathname === '/api/result')) return [3 /*break*/, 5];
+                                if (req.method !== 'GET') {
+                                    next();
+                                    return [2 /*return*/];
+                                }
+                                jobId = (_b = requestUrl.searchParams.get('jobId')) === null || _b === void 0 ? void 0 : _b.trim();
+                                if (!jobId) {
+                                    sendJson(res, 400, { error: 'Missing jobId' });
+                                    return [2 /*return*/];
+                                }
+                                _c.label = 1;
+                            case 1:
+                                _c.trys.push([1, 3, , 4]);
+                                return [4 /*yield*/, readJobState(jobId)];
+                            case 2:
+                                state = _c.sent();
+                                sendJson(res, 200, state);
+                                return [3 /*break*/, 4];
+                            case 3:
+                                error_1 = _c.sent();
+                                message = error_1 instanceof Error ? error_1.message : 'Failed to read job state';
+                                sendJson(res, 500, { error: message });
+                                return [3 /*break*/, 4];
+                            case 4: return [2 /*return*/];
+                            case 5:
+                                next();
+                                return [2 /*return*/];
+                        }
                     });
                 }); });
             },

@@ -93,8 +93,18 @@
   text-align: center;
 }
 
+.panel__body--bottom {
+  display: block;
+  text-align: left;
+}
+
 .panel__body p {
   margin: 0;
+}
+
+.panel__body--bottom p {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .splitter {

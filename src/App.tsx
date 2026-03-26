@@ -10,6 +10,8 @@ function App() {
   const [executionResult, setExecutionResult] = useState('等待执行结果...')
   const dragRef = useRef<null | { type: 'vertical' | 'horizontal' }>(null)
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const pollTimerRef = useRef<number | null>(null)
+  const activeJobIdRef = useRef<string | null>(null)
   const lastLeftWidthRef = useRef(leftWidth)
   const lastRightTopHeightRef = useRef(rightTopHeight)
 
@@ -106,9 +108,69 @@ function App() {
     })
   }
 
+  const stopPolling = () => {
+    if (pollTimerRef.current !== null) {
+      window.clearTimeout(pollTimerRef.current)
+      pollTimerRef.current = null
+    }
+  }
+
+  const pollExecutionResult = (jobId: string) => {
+    activeJobIdRef.current = jobId
+    stopPolling()
+
+    const scheduleNextPoll = () => {
+      pollTimerRef.current = window.setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/result?jobId=${encodeURIComponent(jobId)}`)
+
+          if (!response.ok) {
+            throw new Error(`请求失败：${response.status}`)
+          }
+
+          const data = (await response.json()) as {
+            status?: 'pending' | 'done' | 'error'
+            result?: string
+            error?: string
+          }
+
+          if (activeJobIdRef.current !== jobId) {
+            return
+          }
+
+          if (data.status === 'done') {
+            setExecutionResult(data.result ?? '执行完成，但没有返回内容。')
+            stopPolling()
+            return
+          }
+
+          if (data.status === 'error') {
+            setExecutionResult(data.error ?? '执行失败')
+            stopPolling()
+            return
+          }
+
+          setExecutionResult('任务已提交，正在等待 ChatGPT 返回...')
+          scheduleNextPoll()
+        } catch (error) {
+          if (activeJobIdRef.current !== jobId) {
+            return
+          }
+
+          const message = error instanceof Error ? error.message : '执行失败'
+          setExecutionResult(message)
+          stopPolling()
+        }
+      }, 1000)
+    }
+
+    scheduleNextPoll()
+  }
+
   async function OnClickExeBtn() {
     try {
-      setExecutionResult('正在执行...')
+      stopPolling()
+      setExecutionResult('任务已提交，正在等待 ChatGPT 返回...')
 
       const response = await fetch('/api/execute', {
         method: 'POST',
@@ -123,13 +185,25 @@ function App() {
         throw new Error(message || `请求失败：${response.status}`)
       }
 
-      const data = (await response.json()) as { result?: string }
-      setExecutionResult(data.result ?? '执行完成，但没有返回内容。')
+      const data = (await response.json()) as { jobId?: string }
+
+      if (!data.jobId) {
+        throw new Error('未收到任务标识')
+      }
+
+      pollExecutionResult(data.jobId)
     } catch (error) {
       const message = error instanceof Error ? error.message : '执行失败'
       setExecutionResult(message)
+      stopPolling()
     }
   }
+
+  useEffect(() => {
+    return () => {
+      stopPolling()
+    }
+  }, [])
 
   const workspaceStyle = {
     '--left-width': `${leftWidth}%`,
