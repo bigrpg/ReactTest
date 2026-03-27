@@ -10,10 +10,12 @@ const jobDir = path.resolve(projectRoot, '.chatgpt-jobs')
 
 function runPythonModule(inputText: string): Promise<string> {
   const modulePath = fileURLToPath(new URL('./MyPython.py', import.meta.url))
+  const pythonCommand = process.platform === 'win32' ? 'pythonw' : 'python'
 
   return new Promise((resolve, reject) => {
-    const child = spawn('python', ['-X', 'utf8', modulePath], {
+    const child = spawn(pythonCommand, ['-X', 'utf8', modulePath], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
       env: {
         ...process.env,
         PYTHONIOENCODING: 'utf-8',

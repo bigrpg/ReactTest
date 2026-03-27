@@ -38,8 +38,13 @@ def _call_chatgpt(text: str) -> str:
     if not api_key:
         raise RuntimeError("未配置 OPENAI_API_KEY，无法调用 ChatGPT 接口。")
 
-    api_url = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1/chat/completions").strip()
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip()
+    #base_url = "https://ai.t8star.cn/v1/chat/completions"
+    base_url = "https://api.deepseek.com/chat/completions"
+    #model_name = "gpt-5.4"
+    model_name = "deepseek-chat"
+
+    api_url = os.getenv("OPENAI_API_BASE", base_url).strip()
+    model = os.getenv("OPENAI_MODEL", model_name).strip()
     system_prompt = os.getenv(
         "OPENAI_SYSTEM_PROMPT",
         "你是一个简洁、准确的中文助手。",

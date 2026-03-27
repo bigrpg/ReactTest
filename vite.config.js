@@ -55,9 +55,11 @@ var projectRoot = fileURLToPath(new URL('.', import.meta.url));
 var jobDir = path.resolve(projectRoot, '.chatgpt-jobs');
 function runPythonModule(inputText) {
     var modulePath = fileURLToPath(new URL('./MyPython.py', import.meta.url));
+    var pythonCommand = process.platform === 'win32' ? 'pythonw' : 'python';
     return new Promise(function (resolve, reject) {
-        var child = spawn('python', ['-X', 'utf8', modulePath], {
+        var child = spawn(pythonCommand, ['-X', 'utf8', modulePath], {
             stdio: ['pipe', 'pipe', 'pipe'],
+            windowsHide: true,
             env: __assign(__assign({}, process.env), { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }),
         });
         var stdout = '';

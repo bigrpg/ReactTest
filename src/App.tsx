@@ -5,7 +5,7 @@ function App() {
   const [leftWidth, setLeftWidth] = useState(42)
   const [rightTopHeight, setRightTopHeight] = useState(62)
   const [leftHidden, setLeftHidden] = useState(false)
-  const [bottomHidden, setBottomHidden] = useState(false)
+  const [topHidden, setTopHidden] = useState(false)
   const [editorValue, setEditorValue] = useState('')
   const [executionResult, setExecutionResult] = useState('等待执行结果...')
   const dragRef = useRef<null | { type: 'vertical' | 'horizontal' }>(null)
@@ -64,17 +64,17 @@ function App() {
   }, [leftHidden, leftWidth])
 
   useEffect(() => {
-    if (!bottomHidden && rightTopHeight > 0) {
+    if (!topHidden && rightTopHeight > 0) {
       lastRightTopHeightRef.current = rightTopHeight
     }
-  }, [bottomHidden, rightTopHeight])
+  }, [topHidden, rightTopHeight])
 
   const startDrag = (type: 'vertical' | 'horizontal') => {
     if (type === 'vertical' && leftHidden) {
       return
     }
 
-    if (type === 'horizontal' && bottomHidden) {
+    if (type === 'horizontal' && topHidden) {
       return
     }
 
@@ -95,8 +95,8 @@ function App() {
     })
   }
 
-  const toggleBottomPane = () => {
-    setBottomHidden((current) => {
+  const toggleTopPane = () => {
+    setTopHidden((current) => {
       if (current) {
         setRightTopHeight(lastRightTopHeightRef.current)
         return false
@@ -213,8 +213,8 @@ function App() {
 
   const rightPaneStyle = {
     '--right-top-height': `${rightTopHeight}%`,
-    '--bottom-opacity': bottomHidden ? '0' : '1',
-    '--bottom-pointer-events': bottomHidden ? 'none' : 'auto',
+    '--top-opacity': topHidden ? '0' : '1',
+    '--top-pointer-events': topHidden ? 'none' : 'auto',
   } as CSSProperties
 
   return (
@@ -246,7 +246,7 @@ function App() {
         </button>
 
         <section className="workspace__right" style={rightPaneStyle}>
-          <section className={`workspace__panel workspace__panel--top${bottomHidden ? ' workspace__panel--expanded' : ''}`}>
+          <section className={`workspace__panel workspace__panel--top${topHidden ? ' workspace__panel--hidden' : ''}`}>
             <div className="panel__header">
               <span>编辑区</span>
             </div>
@@ -269,13 +269,13 @@ function App() {
           <button
             type="button"
             className="splitter__toggle splitter__toggle--horizontal"
-            onClick={toggleBottomPane}
-            aria-label={bottomHidden ? '显示下方窗口' : '隐藏下方窗口'}
+            onClick={toggleTopPane}
+            aria-label={topHidden ? '显示上方窗口' : '隐藏上方窗口'}
           >
-            <span className="splitter__toggle-icon">{bottomHidden ? '⌄' : '⌃'}</span>
+            <span className="splitter__toggle-icon">{topHidden ? '⌄' : '⌃'}</span>
           </button>
 
-          <section className={`workspace__panel workspace__panel--bottom${bottomHidden ? ' workspace__panel--hidden' : ''}`}>
+          <section className="workspace__panel workspace__panel--bottom">
             <div className="panel__header panel__header--action">
               <span>执行结果</span>
               <button type="button" className="run-button" onClick={OnClickExeBtn}>

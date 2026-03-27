@@ -1,6 +1,8 @@
 .shell {
-  min-height: 100vh;
+  height: 100vh;
   padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .workspace {
@@ -12,7 +14,7 @@
   --bottom-pointer-events: auto;
 
   display: flex;
-  min-height: calc(100vh - 32px);
+  height: 100%;
   border: 1px solid #dfd7cf;
   border-radius: 18px;
   overflow: hidden;
@@ -38,13 +40,16 @@
 .workspace__panel--top {
   height: var(--right-top-height);
   flex: 0 0 auto;
+  opacity: var(--top-opacity);
+  pointer-events: var(--top-pointer-events);
+  overflow: hidden;
+  transition: height 200ms ease, opacity 160ms ease;
 }
 
 .workspace__panel--bottom {
   flex: 1;
-  opacity: var(--bottom-opacity);
-  pointer-events: var(--bottom-pointer-events);
-  transition: opacity 160ms ease;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .workspace__panel--hidden {
@@ -57,6 +62,7 @@
 .workspace__right {
   display: flex;
   flex: 1;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   flex-direction: column;
@@ -95,7 +101,13 @@
 
 .panel__body--bottom {
   display: block;
+  flex: 1;
+  min-height: 0;
   text-align: left;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-bottom: 24px;
 }
 
 .panel__body p {
@@ -247,7 +259,7 @@ body.is-dragging {
   }
 
   .workspace {
-    min-height: calc(100vh - 20px);
+    height: 100%;
     border-radius: 14px;
   }
 }
